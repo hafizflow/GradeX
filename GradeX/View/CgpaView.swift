@@ -1,10 +1,3 @@
-    //
-    //  CgpaView.swift
-    //  GradeX
-    //
-    //  Created by Hafizur Rahman on 24/10/25.
-    //
-
 import SwiftUI
 
 struct CgpaView: View {
@@ -14,104 +7,132 @@ struct CgpaView: View {
     
     
     var body: some View {
-        ScrollView(.vertical) {
-            VStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 15) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("Welcome !!!")
-                            .font(.title.bold())
-                            .padding(.horizontal, 15)
+        ZStack(alignment: .topTrailing) {
+            ScrollView(.vertical) {
+                VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 15) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("Welcome !!!")
+                                .font(.title.bold())
+                                .padding(.horizontal, 15)
+                            
+                            Text("To GradeX")
+                                .font(.callout)
+                                .padding(.horizontal, 15)
+                        }
+                        .frame(height: 45)
+                        .padding(.bottom, 10)
                         
-                        Text("To GradeX")
-                            .font(.callout)
-                            .padding(.horizontal, 15)
-                    }
-                    .frame(height: 45)
-                    .padding(.bottom, 10)
-                    
-                    
-                    GeometryReader {
-                        let rect = $0.frame(in: .scrollView)
-                        let minY = rect.minY.rounded()
                         
-                            // Card View
-                        ScrollView(.horizontal) {
-                            LazyHStack(spacing: 0) {
-                                ForEach(cards) { card in
-                                    ZStack {
-                                        if minY == 85.0 {
-                                                /// Not Scrolled
-                                                /// Showing All Cards
-                                            CardView(card)
-                                        } else  {
-                                                /// Scrolled
-                                                ///  Showing Only Selected Card
-                                            if activeCard == card.id {
+                        GeometryReader {
+                            let rect = $0.frame(in: .scrollView)
+                            let minY = rect.minY.rounded()
+                            
+                                // Card View
+                            ScrollView(.horizontal) {
+                                LazyHStack(spacing: 0) {
+                                    ForEach(cards) { card in
+                                        ZStack {
+                                            if minY == 85.0 {
+                                                    /// Not Scrolled
+                                                    /// Showing All Cards
                                                 CardView(card)
-                                            } else {
-                                                Rectangle().fill(.clear)
-                                                   
+                                            } else  {
+                                                    /// Scrolled
+                                                    ///  Showing Only Selected Card
+                                                if activeCard == card.id {
+                                                    CardView(card)
+                                                } else {
+                                                    Rectangle().fill(.clear)
+                                                    
+                                                }
                                             }
                                         }
+                                        .containerRelativeFrame(.horizontal)
                                     }
-                                    .containerRelativeFrame(.horizontal)
                                 }
+                                .scrollTargetLayout()
                             }
-                            .scrollTargetLayout()
+                            .scrollPosition(id: $activeCard)
+                            .scrollTargetBehavior(.paging)
+                            .scrollClipDisabled()
+                            .scrollIndicators(.hidden)
+                            .scrollDisabled(minY != 85.0)
                         }
-                        .scrollPosition(id: $activeCard)
-                        .scrollTargetBehavior(.paging)
-                        .scrollClipDisabled()
-                        .scrollIndicators(.hidden)
-                        .scrollDisabled(minY != 85.0)
+                        .frame(height: 125)
                     }
-                    .frame(height: 125)
-                }
-                
-                LazyVStack(spacing: 15) {
-                    ForEach(allCourses) { course in
-                        CourseGradeCardView(course)
-                    }
-                }
-                .padding(15)
-                .mask {
-                    Rectangle()
-                        .visualEffect { content, proxy in
-                            content.offset(y: backgroundLimitOffset(proxy))
+                    
+                    LazyVStack(spacing: 15) {
+                        ForEach(allCourses) { course in
+                            CourseGradeCardView(course)
                         }
-                }
-                .background {
-                    GeometryReader {
-                        let rect = $0.frame(in: .scrollView)
-                        let minY = min(rect.minY - 125, 0)
-                        let progress = max(min(-minY / 25, 1), 0)
-                        
-                        RoundedRectangle(cornerRadius: 20 * progress, style: .continuous)
-                            .fill(scheme == .dark ? .black : .white)
-                            .overlay(alignment: .top) {
-                                
-                            }
+                    }
+                    .padding(15)
+                    .mask {
+                        Rectangle()
                             .visualEffect { content, proxy in
-                                content
-                                    .offset(y: backgroundLimitOffset(proxy))
+                                content.offset(y: backgroundLimitOffset(proxy))
                             }
                     }
+                    .background {
+                        GeometryReader {
+                            let rect = $0.frame(in: .scrollView)
+                            let minY = min(rect.minY - 125, 0)
+                            let progress = max(min(-minY / 25, 1), 0)
+                            
+                            RoundedRectangle(cornerRadius: 20 * progress, style: .continuous)
+                                .fill(scheme == .dark ? .black : .white)
+                                .overlay(alignment: .top) {
+                                    
+                                }
+                                .visualEffect { content, proxy in
+                                    content
+                                        .offset(y: backgroundLimitOffset(proxy))
+                                }
+                        }
+                    }
+                }
+                .padding(.vertical, 15)
+            }
+            .scrollTargetBehavior(CustomScrollBehaviour())
+            .scrollIndicators(.hidden)
+            .onAppear {
+                if activeCard == nil {
+                    activeCard = cards.first?.id
+                    allCourses = courses.shuffled()
                 }
             }
-            .padding(.vertical, 15)
-        }
-        .scrollTargetBehavior(CustomScrollBehaviour())
-        .scrollIndicators(.hidden)
-        .onAppear {
-            if activeCard == nil {
-                activeCard = cards.first?.id
-                allCourses = courses.shuffled()
+            .onChange(of: activeCard) { oldValue, newValue in
+                withAnimation(.snappy) {
+                    allCourses = courses.shuffled()
+                }
             }
-        }
-        .onChange(of: activeCard) { oldValue, newValue in
-            withAnimation(.snappy) {
-                allCourses = courses.shuffled()
+            if #available(iOS 26.0, *) {
+                Button(action: {
+                    
+                }, label: {
+                    Image(systemName: "plus")
+                        .font(.body.bold())
+                })
+                .buttonStyle(.glass)
+                .padding()
+                .padding(.top, 8)
+                .padding(.trailing, 8)
+                .contentShape(Rectangle())
+            } else {
+                Button(action: {
+                    
+                }, label: {
+                    Image(systemName: "plus")
+                        .font(.body.bold())
+                })
+                .buttonStyle(.borderedProminent)
+                .padding()
+                .padding(.top, 8)
+                .padding(.trailing, 8)
+                .contentShape(Rectangle())
             }
+            
         }
     }
     
@@ -119,7 +140,7 @@ struct CgpaView: View {
     nonisolated func backgroundLimitOffset(_ proxy: GeometryProxy) -> CGFloat {
         let minY = proxy.frame(in: .scrollView).minY
         
-        return minY < 100 ? -minY + 100 : 0
+        return minY < 90 ? -minY + 90 : 0
     }
     
         /// Card View
@@ -150,19 +171,21 @@ struct CgpaView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .scaleEffect(scale, anchor: .bottom)
                 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 4 - (progress * 8)) {
                     Spacer(minLength: 0)
                     
                     Text("\(card.studentName)")
-                        .font(.title3)
+                        .font(.title3.bold())
+                        .scaleEffect(1 - (progress * 0.15), anchor: .leading)
                     
                     Text("CGPA: \(String(format: "%.2f", card.cgpa))")
                         .font(.title.bold())
+                        .scaleEffect(1 - (progress * 0.2), anchor: .leading)
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(15)
-                .offset(y: progress * -25)
+                .padding()
+                .offset(y: progress * -35)
             }
             .offset(y: -offset)
             .offset(y: progress * -topValue)
