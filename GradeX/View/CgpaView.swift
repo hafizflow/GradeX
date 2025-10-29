@@ -1,15 +1,21 @@
 import SwiftUI
 
 struct CgpaView: View {
-    @State private var allCourses: [Course] = []
     @State private var activeCard: UUID?
     @State private var showingAddUser = false
     @State private var showingAddSemester = false
     @Binding var activeCardId: UUID?
     @Binding var cards: [Card]
     @Environment(\.colorScheme) private var scheme
-    @State private var semester: String = ""
+    @State private var semesterName: String = ""
     
+    private var activeCardData: Card? {
+        cards.first { $0.id == activeCard }
+    }
+    
+    private var activeSemesters: [Semester] {
+        activeCardData?.semesters ?? []
+    }
     
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -85,7 +91,6 @@ struct CgpaView: View {
                                                                 CardView(card)
                                                             } else {
                                                                 Rectangle().fill(.clear)
-                                                                
                                                             }
                                                         }
                                                     }
@@ -100,7 +105,7 @@ struct CgpaView: View {
                                         .scrollIndicators(.hidden)
                                         .scrollDisabled(minY != 85.0)
                                         
-                                            // Cards count indicator - now below the cards
+                                            // Cards count indicator
                                         if cards.count > 1 {
                                             HStack(spacing: 6) {
                                                 ForEach(cards) { card in
@@ -118,9 +123,32 @@ struct CgpaView: View {
                                 .frame(height: 125)
                             }
                             
+                                // Semesters and Courses List
                             LazyVStack(spacing: 15) {
-                                ForEach(allCourses) { course in
-                                    CourseGradeCardView(course)
+                                if activeSemesters.isEmpty {
+                                    VStack(spacing: 16) {
+                                        Text("No semesters added yet")
+                                            .font(.body)
+                                            .foregroundStyle(.gray)
+                                        
+                                        Text("Tap the book icon below to add your first semester")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .multilineTextAlignment(.center)
+                                    }
+                                    .padding(.top, 40)
+                                    .padding(.horizontal, 30)
+                                } else {
+                                    ForEach(activeSemesters) { semester in
+                                        SemesterSectionView(
+                                            semester: semester,
+                                            cardId: activeCard ?? UUID()
+                                        ) { semesterId, course in
+                                            addCourseToSemester(semesterId: semesterId, course: course)
+                                        } onDeleteCourse: { semesterId, courseId in
+                                            deleteCourse(semesterId: semesterId, courseId: courseId)
+                                        }
+                                    }
                                 }
                             }
                             .padding(15)
@@ -138,9 +166,6 @@ struct CgpaView: View {
                                     
                                     RoundedRectangle(cornerRadius: 20 * progress, style: .continuous)
                                         .fill(scheme == .dark ? .black : .white)
-                                        .overlay(alignment: .top) {
-                                            
-                                        }
                                         .visualEffect { content, proxy in
                                             content
                                                 .offset(y: backgroundLimitOffset(proxy))
@@ -156,14 +181,10 @@ struct CgpaView: View {
                         if activeCard == nil {
                             activeCard = cards.first?.id
                             activeCardId = cards.first?.id
-                            allCourses = courses.shuffled()
                         }
                     }
                     .onChange(of: activeCard) { oldValue, newValue in
-                        withAnimation(.snappy) {
-                            allCourses = courses.shuffled()
-                            activeCardId = newValue
-                        }
+                        activeCardId = newValue
                     }
                 }
             }
@@ -198,7 +219,7 @@ struct CgpaView: View {
             .padding(.trailing, 8)
             
             
-                // ✅ Add Semester Button (bottom-right)
+                // Add Semester Button (bottom-right)
             VStack {
                 Spacer()
                 HStack {
@@ -206,6 +227,7 @@ struct CgpaView: View {
                     if !cards.isEmpty {
                         if #available(iOS 26.0, *) {
                             Button(action: {
+                                semesterName = ""
                                 showingAddSemester = true
                             }, label: {
                                 Image(systemName: "book")
@@ -217,6 +239,7 @@ struct CgpaView: View {
                             .shadow(radius: 8)
                         } else {
                             Button(action: {
+                                semesterName = ""
                                 showingAddSemester = true
                             }, label: {
                                 Image(systemName: "book")
@@ -242,17 +265,70 @@ struct CgpaView: View {
             }
         }
         .sheet(isPresented: $showingAddSemester) {
-             CustomTextField(title: "Add Semester", text: $semester, placeholder: "Enter Semester Name", autoFocus: true)
+            VStack(spacing: 20) {
+                CustomTextField(
+                    title: "Add Semester",
+                    text: $semesterName,
+                    placeholder: "e.g., Spring 2024",
+                    autoFocus: true
+                )
                 .padding(.horizontal, 24)
-                .presentationDetents([.fraction(0.17)])
                 
+                HStack(spacing: 12) {
+                    Button("Cancel") {
+                        showingAddSemester = false
+                        semesterName = ""
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.gray.opacity(0.2))
+                    .foregroundColor(.primary)
+                    .cornerRadius(12)
+                    
+                    Button("Add") {
+                        addSemester()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(semesterName.isEmpty ? Color.gray.opacity(0.2) : Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                    .disabled(semesterName.isEmpty)
+                }
+                .padding(.horizontal, 24)
+            }
+            .padding(.vertical, 24)
+            .presentationDetents([.height(200)])
         }
+    }
+    
+    private func addSemester() {
+        guard !semesterName.isEmpty,
+              let cardIndex = cards.firstIndex(where: { $0.id == activeCard }) else { return }
+        
+        let newSemester = Semester(name: semesterName)
+        cards[cardIndex].semesters.append(newSemester)
+        semesterName = ""
+        showingAddSemester = false
+    }
+    
+    private func addCourseToSemester(semesterId: UUID, course: Course) {
+        guard let cardIndex = cards.firstIndex(where: { $0.id == activeCard }),
+              let semesterIndex = cards[cardIndex].semesters.firstIndex(where: { $0.id == semesterId }) else { return }
+        
+        cards[cardIndex].semesters[semesterIndex].courses.append(course)
+    }
+    
+    private func deleteCourse(semesterId: UUID, courseId: UUID) {
+        guard let cardIndex = cards.firstIndex(where: { $0.id == activeCard }),
+              let semesterIndex = cards[cardIndex].semesters.firstIndex(where: { $0.id == semesterId }) else { return }
+        
+        cards[cardIndex].semesters[semesterIndex].courses.removeAll { $0.id == courseId }
     }
     
         /// Background Limit Offset
     nonisolated func backgroundLimitOffset(_ proxy: GeometryProxy) -> CGFloat {
         let minY = proxy.frame(in: .scrollView).minY
-        
         return minY < 90 ? -minY + 90 : 0
     }
     
@@ -305,34 +381,6 @@ struct CgpaView: View {
         }
         .padding(.horizontal, 15)
     }
-    
-    
-        /// Course Grade Card View
-    @ViewBuilder
-    func CourseGradeCardView(_ course: Course) -> some View {
-        HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 4, content: {
-                Text(course.name)
-                    .font(.callout)
-                    .fontWeight(.semibold)
-                
-                Text("Credit: \(String(format: "%.1f", course.credit))")
-                    .font(.caption)
-                    .foregroundStyle(.gray)
-                
-            })
-            
-            Spacer(minLength: 0)
-            
-            Text(String(format: "%.2f", course.gpa))
-                .font(.body)
-                .foregroundStyle(.gray)
-            
-        }
-        .lineLimit(1)
-        .padding(.horizontal, 15)
-        .padding(.vertical, 6)
-    }
 }
 
 struct CustomScrollBehaviour: ScrollTargetBehavior {
@@ -345,6 +393,6 @@ struct CustomScrollBehaviour: ScrollTargetBehavior {
 
 #Preview {
     CgpaView(activeCardId: .constant(nil), cards: .constant([
-        Card(bgColor: .blue, studentName: "Preview", cgpa: 3.80)
+        Card(bgColor: .blue, studentName: "Preview")
     ]))
 }

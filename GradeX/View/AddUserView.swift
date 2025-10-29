@@ -9,12 +9,7 @@ struct AddUserView: View {
     @State private var universityName: String = "DIU"
     @State private var facultyName: String = ""
     @State private var batch: String = ""
-    @State private var selectedColor: CardColors = .gray
-    
-    var isiOS26: Bool {
-        if #available(iOS 26.0, *) { return true }
-        else { return false }
-    }
+    @State private var selectedColor: CardColors = .blue
     
     var onSave: (Card) -> Void
     
@@ -212,17 +207,6 @@ struct ColorGridPicker: View {
     }
 }
 
-    // Extension to CardColors for better UI
-extension CardColors: Identifiable {
-    var id: Self { self }
-    
-    var name: String {
-        switch self {
-            case .blue: return "Blue"
-            default: return "Red"
-        }
-    }
-}
 
 #Preview {
     AddUserView { card in
