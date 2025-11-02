@@ -39,10 +39,11 @@ struct CgpaView: View {
                     
                     Spacer()
                     
-                        // Empty State Message
-                    Text("Add user to calculate CGPA")
-                        .font(.body)
-                        .foregroundStyle(.gray)
+                    ContentUnavailableView(
+                        "No user found",
+                        systemImage: "person.badge.shield.exclamationmark.fill",
+                        description: Text("Add user by tapping top-right button to calculate CGPA")
+                    )
                     
                     Spacer()
                 }
@@ -126,17 +127,14 @@ struct CgpaView: View {
                                 // Semesters and Courses List
                             LazyVStack(spacing: 15) {
                                 if activeSemesters.isEmpty {
-                                    VStack(spacing: 16) {
-                                        Text("No semesters added yet")
-                                            .font(.body)
-                                            .foregroundStyle(.gray)
-                                        
-                                        Text("Tap the book icon below to add your first semester")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .multilineTextAlignment(.center)
-                                    }
-                                    .padding(.top, 40)
+                                    
+                                    
+                                    ContentUnavailableView(
+                                        "No semesters added yet",
+                                        systemImage: "person.badge.shield.exclamationmark.fill",
+                                        description: Text("Tap the book icon below to add your first semester")
+                                    )
+                                    .padding(.top, 180)
                                     .padding(.horizontal, 30)
                                 } else {
                                     ForEach(activeSemesters) { semester in
@@ -275,25 +273,32 @@ struct CgpaView: View {
                 .padding(.horizontal, 24)
                 
                 HStack(spacing: 12) {
-                    Button("Cancel") {
+                    Button {
                         showingAddSemester = false
                         semesterName = ""
+                    } label: {
+                        Text("Cancel")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.gray.opacity(0.2))
+                            .foregroundColor(.primary)
+                            .cornerRadius(12)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.gray.opacity(0.2))
-                    .foregroundColor(.primary)
-                    .cornerRadius(12)
                     
-                    Button("Add") {
+                    
+                    Button {
                         addSemester()
+                    } label: {
+                        Text("Add")
+                            .contentShape(Rectangle())
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(semesterName.isEmpty ? Color.gray.opacity(0.2) : Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .disabled(semesterName.isEmpty)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(semesterName.isEmpty ? Color.gray.opacity(0.2) : Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .disabled(semesterName.isEmpty)
+                    
                 }
                 .padding(.horizontal, 24)
             }

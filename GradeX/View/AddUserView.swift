@@ -9,7 +9,7 @@ struct AddUserView: View {
     @State private var universityName: String = "DIU"
     @State private var facultyName: String = ""
     @State private var batch: String = ""
-    @State private var selectedColor: CardColors = .blue
+    @State private var selectedColor: CardColors = .allCases.randomElement()!
     
     var onSave: (Card) -> Void
     
