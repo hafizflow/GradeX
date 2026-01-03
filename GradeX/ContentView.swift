@@ -1,28 +1,34 @@
+import SwiftData
 import SwiftUI
 
 struct ContentView: View {
-    @State private var activeCardId: UUID?
-    @State private var cards: [Card] = []
-    
-    var activeCardColor: Color {
-        guard let activeCardId = activeCardId,
-              let activeCard = cards.first(where: { $0.id == activeCardId }) else {
-            return cards.first?.bgColor ?? .blue
-        }
-        return activeCard.bgColor
-    }
+    @Query var semesters: [Semester]
+    @State private var showAddSemesterView: Bool = false
     
     var body: some View {
-        TabView {
-            CgpaView(activeCardId: $activeCardId, cards: $cards)
-                .tabItem { Label("CGPA", systemImage: "square.and.pencil") }
-            Text("Statistics").tabItem { Label("Statistics", systemImage: "waveform.path.ecg") }
-            Text("Settings").tabItem { Label("Settings", systemImage: "gear") }
+        NavigationStack {
+            List {
+                ForEach(semesters) { semester in
+                    Section(semester.name) {
+                        ForEach(semester.courses) { course in
+                            Text(course.courseTitle)
+                        }
+                    }
+                }
+            }
+            .listStyle(.sidebar)
+            .navigationTitle("GradeX")
+            .navigationSubtitle("Calculate || Track || Excel")
+            .toolbarTitleDisplayMode(.inlineLarge)
+            .toolbar { Button("Add Semester", systemImage: "plus") { showAddSemesterView = true } }
+            .sheet(isPresented: $showAddSemesterView) {
+                AddSemesterView()
+            }
         }
-        .tint(activeCardColor)
     }
 }
 
 #Preview {
     ContentView()
+        .modelContainer(for: Semester.self)
 }
