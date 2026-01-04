@@ -10,6 +10,7 @@ struct AddSemesterView: View {
         NavigationStack {
             Form {
                 TextField("Enter semester name...", text: $semesterName, axis: .vertical)
+                    .submitLabel(.done)
             }
             .navigationTitle("Add Semester")
             .navigationBarTitleDisplayMode(.inline)

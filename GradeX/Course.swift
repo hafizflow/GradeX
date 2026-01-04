@@ -1,26 +1,18 @@
-//
-//  Course.swift
-//  GradeX
-//
-//  Created by Hafizur Rahman on 4/1/26.
-//
-
-import Foundation
 import SwiftData
-
+import Foundation
 
 @Model
 class Course {
     var courseTitle: String
     var courseCode: String
-    var credits: Double
+    var credit: Double
     var grade: Double
     @Relationship(deleteRule: .cascade) var semester: Semester?
     
-    init(courseTitle: String, courseCode: String, credits: Double, grade: Double, semester: Semester? = nil) {
+    init(courseTitle: String, courseCode: String = "", credit: Double, grade: Double, semester: Semester? = nil) {
         self.courseTitle = courseTitle
         self.courseCode = courseCode
-        self.credits = credits
+        self.credit = credit
         self.grade = grade
         self.semester = semester
     }
