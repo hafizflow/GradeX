@@ -68,10 +68,14 @@ struct AddCourseView: View {
                         addCourse()
                     }
                     .buttonStyle(.glassProminent)
-//                    .disabled(validSemester)
+                    .disabled(invalidCourse)
                 }
             }
         }
+    }
+    
+    var invalidCourse: Bool {
+        courseTitle.isEmpty 
     }
     
     private func addCourse() {
